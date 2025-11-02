@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstring>
 
 /* 
     AES Constants:
@@ -68,4 +69,39 @@ static inline uint8_t mul(uint8_t a, uint8_t b) {
         b >>= 1;
     }
     return res;
+}
+
+// Takes original 16-byte AES key and streches it into 176 bytes of round keys
+// AES-128 has 11 round keys, each 16 bytes, 11 * 16 = 176
+void KeyExpansion(const uint8_t key[16], uint8_t roundKeys[176]) {
+    memcpy(roundKeys, key, 16); // original key
+    int bytesGenerated = 16;
+    int rconIter = 1;
+    uint8_t temp[4];
+
+    while (bytesGenerated < 176) {
+        memcpy(temp, &roundKeys[bytesGenerated - 4], 4);
+
+        if (bytesGenerated % 16 == 0) {
+            // rotate the bytes, move the first byte to the end
+            uint8_t t = temp[0];
+            temp[0] = temp[1];
+            temp[1] = temp[2];
+            temp[2] = temp[3];
+            temp[3] = t;
+            // apply S-box to each byte
+            temp[0] = sbox[temp[0]];
+            temp[1] = sbox[temp[1]];
+            temp[2] = sbox[temp[2]];
+            temp[3] = sbox[temp[3]];
+            // mixes with round constant
+            temp[0] ^= Rcon[rconIter++];
+        }
+
+        // generate 4 new bytes by XORing each byte in temp with the byte 16 positions earlier in the expanded key
+        for (int i = 0; i < 4; ++i) {
+            roundKeys[bytesGenerated] = roundKeys[bytesGenerated - 16] ^ temp[i];
+            bytesGenerated++;
+        }
+    }
 }
