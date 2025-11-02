@@ -50,3 +50,22 @@ static const uint8_t Rcon[11] = {
     0x00, // unused 0-index
     0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 };
+
+/***  Helper Functions (Galois Field (2^8)) ***/
+
+// Multiply by 2 in AES math, and if it overflows 8 bits, wrap it around by XORing with 0x1B
+static inline uint8_t xtime(uint8_t x) {
+    return (uint8_t)((x << 1) ^ ((x & 0x80) ? 0x1B : 0x00));
+}
+
+// Multiplying and b bit by bit, for every 1 bit in b, add (XOR) a shifted version of a
+// Each shift is a multiply by 2 in AES's math system (xtime)
+static inline uint8_t mul(uint8_t a, uint8_t b) {
+    uint8_t res = 0;
+    while (b) {
+        if (b & 1) res ^= a;
+        a = xtime(a);
+        b >>= 1;
+    }
+    return res;
+}
