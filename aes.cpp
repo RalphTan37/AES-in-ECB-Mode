@@ -53,8 +53,7 @@ static const uint8_t inv_sbox[256] = {
 };
 
 static const uint8_t Rcon[11] = {
-    0x00,0x01000000,0x02000000,0x04000000,0x08000000,
-    0x10000000,0x20000000,0x40000000,0x80000000,0x1b000000,0x36000000
+    0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 };
 
 /***  Helper Functions (Galois Field (2^8)) ***/
@@ -269,6 +268,7 @@ bool pkcs7_unpad(std::vector<uint8_t>& data, size_t block_size=16) {
 
 string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     int pad = 16 - (inputText.size() % 16);
+    if (pad == 16) pad = 0;
     for (int i = 0; i < pad; i++) {
         inputText.push_back(static_cast<uint8_t>(pad));
     }
