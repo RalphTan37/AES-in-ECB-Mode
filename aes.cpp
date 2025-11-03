@@ -2,6 +2,9 @@
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include <string>
+
+using namespace std;
 
 /* 
     AES Constants:
@@ -50,8 +53,8 @@ static const uint8_t inv_sbox[256] = {
 };
 
 static const uint8_t Rcon[11] = {
-    0x00, // unused 0-index
-    0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
+    0x00,0x01000000,0x02000000,0x04000000,0x08000000,
+    0x10000000,0x20000000,0x40000000,0x80000000,0x1b000000,0x36000000
 };
 
 /***  Helper Functions (Galois Field (2^8)) ***/
@@ -261,4 +264,134 @@ bool pkcs7_unpad(std::vector<uint8_t>& data, size_t block_size=16) {
 
     data.resize(data.size() - pad_len);
     return true;
+}
+
+
+string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
+    int pad = 16 - (inputText.size() % 16);
+    for (int i = 0; i < pad; i++) {
+        inputText.push_back(static_cast<uint8_t>(pad));
+    }
+
+    uint8_t roundKeys[176];
+    KeyExpansion(key.data(), roundKeys);
+
+    vector<uint8_t> encryptedText;
+    for (size_t i = 0; i < inputText.size(); i += 16) {
+        uint8_t block[16];
+        Cipher(&inputText[i], block, roundKeys);
+        encryptedText.insert(encryptedText.end(), block, block + 16);
+    }
+    string finalText;
+    for (uint8_t byte : encryptedText) {
+        char buf[3];
+        sprintf(buf, "%02x", byte);
+        finalText += buf;
+    }
+
+    return finalText;
+}
+
+string decrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
+    uint8_t roundKeys[176];
+    KeyExpansion(key.data(), roundKeys);
+
+    vector<uint8_t> decryptedText;
+    for (size_t i = 0; i < inputText.size(); i += 16) {
+        uint8_t block[16];
+        InvCipher(&inputText[i], block, roundKeys);
+        decryptedText.insert(decryptedText.end(), block, block + 16);
+    }
+
+    !pkcs7_unpad(decryptedText);
+
+    string finalText;
+    for (uint8_t byte : decryptedText) {
+        char buf[3];
+        sprintf(buf, "%02x", byte);
+        finalText += buf;
+    }
+
+    return finalText;
+}
+
+int main() {
+    char action;
+    array<uint8_t, 16> key;
+    string rawKey;
+    vector<uint8_t> inputText;
+    string rawText;
+
+    
+    cout << "Enter 'e' for encryption and 'd' for decryption: " << endl;
+    cin >> action;
+
+
+    if (action == 'e') {
+        cout << "Enter text to be encrypted: " << endl;
+    } else if (action == 'd') {
+        cout << "Enter text to be decrypted:" << endl;
+    } else {
+        cout << "Invalid action." << endl;
+        return 1;
+    }
+    cin >> rawText;
+
+    if (rawText.length() == 0) {
+        cout << "Text cannot be empty." << endl;
+        return 1;
+    } else if (rawText.length() % 2) {
+        cout << "Text length must be even." << endl;
+        return 1;
+    } else {
+        bool test = true;
+        for (char c : rawText) {
+            if (!isxdigit(static_cast<unsigned char>(c)))
+                test = false;
+        }
+        if (!test) {
+            cout << "Text must be in hexadecimal format." << endl;
+            return 1;
+        }
+    }
+
+    cout << "Enter key: " << endl;
+    cin >> rawKey;
+
+    if (rawKey.length() != 32) {
+        cout << "Key must be 32 characters." << endl;
+        return 1;
+    } else {
+        bool test = true;
+        for (char c : rawKey) {
+            if (!isxdigit(static_cast<unsigned char>(c)))
+                test = false;
+        }
+        if (!test) {
+            cout << "Key must be in hexadecimal format." << endl;
+            return 1;
+        }
+    }
+
+    for (int i = 0; i < 16; i++) {
+        key[i] = static_cast<uint8_t>(stoi(rawKey.substr(2*i, 2), nullptr, 16));
+    }
+    for (int i = 0; i < rawText.length() / 2; i++) {
+        inputText.push_back(static_cast<uint8_t>(stoi(rawText.substr(2*i, 2), nullptr, 16)));
+    }
+
+    
+
+
+    string finalText;
+    if (action == 'e') {
+        finalText = encrypt(key, inputText);
+    } else {
+        finalText = decrypt(key, inputText);
+    }
+    
+    cout << "Resulting Text: " << finalText << endl;
+
+
+    return 0;
 }
