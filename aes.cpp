@@ -190,3 +190,44 @@ void InvMixColumns(uint8_t state[16]) {
 void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
     for (int i = 0; i < 16; ++i) state[i] ^= roundKey[i];
 }
+
+// Encrypts one 16-byte block
+void Cipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176]) {
+    uint8_t state[16];
+    memcpy(state, in, 16);
+    AddRoundKey(state, roundKeys); // first round (0)
+
+    for (int round = 1; round <= 9; ++round) {
+        SubBytes(state);
+        ShiftRows(state);
+        MixColumns(state);
+        AddRoundKey(state, roundKeys + 16*round);
+    }
+    
+    // last round
+    SubBytes(state);
+    ShiftRows(state);
+    AddRoundKey(state, roundKeys + 160);
+
+    memcpy(out, state, 16);
+}
+
+// Decrypts one 16-byte block
+void InvCipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176]) {
+    uint8_t state[16];
+    memcpy(state, in, 16);
+
+    AddRoundKey(state, roundKeys + 160);
+    InvShiftRows(state);
+    InvSubBytes(state);
+
+    for (int round = 9; round >= 1; --round) {
+        AddRoundKey(state, roundKeys + 16*round);
+        InvMixColumns(state);
+        InvShiftRows(state);
+        InvSubBytes(state);
+    }
+    
+    AddRoundKey(state, roundKeys); // first round
+    memcpy(out, state, 16);
+}
