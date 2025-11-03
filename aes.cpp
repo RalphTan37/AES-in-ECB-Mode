@@ -105,3 +105,88 @@ void KeyExpansion(const uint8_t key[16], uint8_t roundKeys[176]) {
         }
     }
 }
+
+/*** Core AES Round Operations ***/
+
+// Replace bytes using lookup (Confusion)
+void SubBytes(uint8_t state[16]) {
+    for (int i = 0; i < 16; ++i) state[i] = sbox[state[i]];
+}
+
+// Rotate each row differently (Diffusion)
+void InvSubBytes(uint8_t state[16]) {
+    for (int i = 0; i < 16; ++i) state[i] = inv_sbox[state[i]];
+}
+
+// Each row is shifted by a different amount
+void ShiftRows(uint8_t state[16]) {
+    uint8_t tmp[16];
+    tmp[0]=state[0]; 
+    tmp[1]=state[5]; 
+    tmp[2]=state[10]; 
+    tmp[3]=state[15];
+    tmp[4]=state[4]; 
+    tmp[5]=state[9]; 
+    tmp[6]=state[14]; 
+    tmp[7]=state[3];
+    tmp[8]=state[8]; 
+    tmp[9]=state[13];
+    tmp[10]=state[2]; 
+    tmp[11]=state[7];
+    tmp[12]=state[12];
+    tmp[13]=state[1];
+    tmp[14]=state[6]; 
+    tmp[15]=state[11];
+    memcpy(state,tmp,16);
+}
+
+// Reverse - Shifting in the opposite direction to undo it during decryption
+void InvShiftRows(uint8_t state[16]) {
+    uint8_t tmp[16];
+    tmp[0]=state[0]; 
+    tmp[1]=state[13]; 
+    tmp[2]=state[10]; 
+    tmp[3]=state[7];
+    tmp[4]=state[4];
+    tmp[5]=state[1]; 
+    tmp[6]=state[14]; 
+    tmp[7]=state[11];
+    tmp[8]=state[8]; 
+    tmp[9]=state[5];  
+    tmp[10]=state[2];
+    tmp[11]=state[15];
+    tmp[12]=state[12];
+    tmp[13]=state[9]; 
+    tmp[14]=state[6]; 
+    tmp[15]=state[3];
+    memcpy(state,tmp,16);
+}
+
+// Blend bytes in each column (Diffusion)
+void MixColumns(uint8_t state[16]) {
+    for (int c = 0; c < 4; ++c) {
+        int i = 4*c;
+        uint8_t a0 = state[i+0], a1 = state[i+1], a2 = state[i+2], a3 = state[i+3];
+        state[i+0] = (uint8_t)(mul(0x02,a0) ^ mul(0x03,a1) ^ a2 ^ a3);
+        state[i+1] = (uint8_t)(a0 ^ mul(0x02,a1) ^ mul(0x03,a2) ^ a3);
+        state[i+2] = (uint8_t)(a0 ^ a1 ^ mul(0x02,a2) ^ mul(0x03,a3));
+        state[i+3] = (uint8_t)(mul(0x03,a0) ^ a1 ^ a2 ^ mul(0x02,a3));
+    }
+}
+
+// Reverses MixColumns() during decryption
+void InvMixColumns(uint8_t state[16]) {
+    for (int c = 0; c < 4; ++c) {
+        int i=4*c;
+        uint8_t a0=state[i+0], a1=state[i+1], a2=state[i+2], a3=state[i+3];
+        state[i+0] = (uint8_t)(mul(0x0e,a0)^mul(0x0b,a1)^mul(0x0d,a2)^mul(0x09,a3));
+        state[i+1] = (uint8_t)(mul(0x09,a0)^mul(0x0e,a1)^mul(0x0b,a2)^mul(0x0d,a3));
+        state[i+2] = (uint8_t)(mul(0x0d,a0)^mul(0x09,a1)^mul(0x0e,a2)^mul(0x0b,a3));
+        state[i+3] = (uint8_t)(mul(0x0b,a0)^mul(0x0d,a1)^mul(0x09,a2)^mul(0x0e,a3));
+    }
+}
+
+// XORs the 16-byte state with the 16-byte round key
+void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
+    for (int i = 0; i < 16; ++i) state[i] ^= roundKey[i];
+}
