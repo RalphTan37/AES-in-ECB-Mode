@@ -3,6 +3,9 @@
 #include <vector>
 #include <iostream>
 #include <string>
+#include <array>
+#include <cctype>
+#include <cstdio>
 
 using namespace std;
 
