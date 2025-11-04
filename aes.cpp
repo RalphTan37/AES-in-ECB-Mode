@@ -6,13 +6,8 @@
 
 using namespace std;
 
-/* 
-    AES Constants:
-    A lookup table with 256 entries for Sbox and its inverse.
-    S-box substitutes each byte with another for confusion.
-    Inverse S-box reverses what the S-box did during encryption to get original data back.
-    Rcon ensures each round key is different.
-*/
+
+// sbox, inverse sbox, and round constants
 
 static const uint8_t sbox[256] = {
     0x63,0x7c,0x77,0x7b,0xf2,0x6b,0x6f,0xc5,0x30,0x01,0x67,0x2b,0xfe,0xd7,0xab,0x76,
