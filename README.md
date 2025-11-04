@@ -1,7 +1,11 @@
 # AES-in-ECB-Mode
 Implementing AES encryption and decryption in Electronic Code Book (ECB) mode using C++
 
-You can run a c++ file assuming you have "clank" with a comman g++ aes.cpp -o a (a being the name you want to use for the file) then running with ./a (no command line arguments).
+# Compile AES.cpp
+```g++ aes.cpp -o aes```
+
+# Run AES
+```.\aes```
 
 Example tests (all are known test vectors with matching results): 
 
