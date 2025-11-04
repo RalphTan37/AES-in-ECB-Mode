@@ -317,15 +317,14 @@ int main() {
     vector<uint8_t> inputText;
     string rawText;
 
-    
     cout << "Enter 'e' for encryption and 'd' for decryption: " << endl;
     cin >> action;
 
 
     if (action == 'e') {
-        cout << "Enter text to be encrypted: " << endl;
+        cout << "Enter text to be encrypted without spaces or delimiters: " << endl;
     } else if (action == 'd') {
-        cout << "Enter text to be decrypted:" << endl;
+        cout << "Enter text to be decrypted without spaces or delimiters:" << endl;
     } else {
         cout << "Invalid action." << endl;
         return 1;
@@ -350,7 +349,7 @@ int main() {
         }
     }
 
-    cout << "Enter key: " << endl;
+    cout << "Enter key without spaces or delimiters: " << endl;
     cin >> rawKey;
 
     if (rawKey.length() != 32) {
