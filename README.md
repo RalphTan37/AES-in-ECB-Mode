@@ -2,6 +2,9 @@
 Implementation of **AES encryption and decryption** in **Electronic Codebook (ECB)** mode using **C++**. <br>
 Collaborators: Ralph Tan & Zukai Sagan
 
+## Explanation of Design Decisions
+The AES program uses small helper functions like xtime() and mul() to handle the math behind AES encryption quickly and accurately. Padding and unpadding follow the PKCS#7 standard, ensuring the data always fits into 16-byte blocks and that padding errors are safely handled. Each AES step, such as key expansion, subsitution, and mixing are separated into their own function for comprehensibility. Lastly, using the official NIST test vectors show that the encryption and decryption results are accurate.
+
 ## To compile the program:
 ```
 g++ aes.cpp -o aes
