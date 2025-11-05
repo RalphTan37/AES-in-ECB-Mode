@@ -263,7 +263,8 @@ bool pkcs7_unpad(std::vector<uint8_t>& data, size_t block_size=16) {
     return true;
 }
 
-
+// Takes plaintext and a 128-bit AES key, encrypts the data in 16-byte blocks using AES
+// Returns the result as a hexadecimal string
 string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     int pad = 16 - (inputText.size() % 16);
     if (pad == 16) pad = 0;
@@ -290,6 +291,7 @@ string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     return finalText;
 }
 
+// Takes the ciphertext and decrypts them using the same 128-bit key
 string decrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     uint8_t roundKeys[176];
     KeyExpansion(key.data(), roundKeys);
@@ -377,9 +379,6 @@ int main() {
         inputText.push_back(static_cast<uint8_t>(stoi(rawText.substr(2*i, 2), nullptr, 16)));
     }
 
-    
-
-
     string finalText;
     if (action == 'e') {
         finalText = encrypt(key, inputText);
@@ -388,7 +387,6 @@ int main() {
     }
     
     cout << "Resulting Text: " << finalText << endl;
-
 
     return 0;
 }
