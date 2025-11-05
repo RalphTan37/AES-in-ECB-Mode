@@ -234,24 +234,22 @@ void InvCipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[17
     memcpy(out, state, 16);
 }
 
-/*** PKCS#7 Padding ***/
 
-// Adds bytes so data fits AES 16-byte blocks
-std::vector<uint8_t> pkcs7_pad(const std::vector<uint8_t>& data, size_t block_size=16) {
-    size_t pad_len = block_size - (data.size() % block_size);
-    if (pad_len == 0) pad_len = block_size;
-
-    std::vector<uint8_t> out = data;
-    out.insert(out.end(), pad_len, static_cast<uint8_t>(pad_len));
-    return out;
+// Adds padding as needed to make inputText a multiple of 16 bytes
+void pad(vector<uint8_t>& inputText) {
+    size_t pad = 16 - (inputText.size() % 16);
+    if (pad == 16) pad = 0;
+    for (size_t i = 0; i < pad; i++) {
+        inputText.push_back(static_cast<uint8_t>(pad));
+    }
 }
 
 // Checks last byte and trims padding
-bool pkcs7_unpad(std::vector<uint8_t>& data, size_t block_size=16) {
-    if (data.empty() || (data.size() % block_size) != 0) return false;
+bool unpad(std::vector<uint8_t>& data) {
+    if (data.empty() || (data.size() % 16) != 0) return false;
     uint8_t last = data.back();
 
-    if (last == 0 || last > block_size) return false;
+    if (last == 0 || last > 16) return false;
     size_t pad_len = last;
 
     // verify padding bytes
@@ -266,11 +264,7 @@ bool pkcs7_unpad(std::vector<uint8_t>& data, size_t block_size=16) {
 // Takes plaintext and a 128-bit AES key, encrypts the data in 16-byte blocks using AES
 // Returns the result as a hexadecimal string
 string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
-    int pad = 16 - (inputText.size() % 16);
-    if (pad == 16) pad = 0;
-    for (int i = 0; i < pad; i++) {
-        inputText.push_back(static_cast<uint8_t>(pad));
-    }
+    pad(inputText);
 
     uint8_t roundKeys[176];
     KeyExpansion(key.data(), roundKeys);
@@ -303,7 +297,7 @@ string decrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
         decryptedText.insert(decryptedText.end(), block, block + 16);
     }
 
-    !pkcs7_unpad(decryptedText);
+    !unpad(decryptedText);
 
     string finalText;
     for (uint8_t byte : decryptedText) {
