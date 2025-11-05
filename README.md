@@ -1,5 +1,6 @@
 # AES-in-ECB-Mode
-Implementation of **AES encryption and decryption** in **Electronic Codebook (ECB)** mode using **C++**.
+Implementation of **AES encryption and decryption** in **Electronic Codebook (ECB)** mode using **C++**. <br>
+Collaborators: Ralph Tan & Zukai Sagan
 
 ## To compile the program:
 ```
