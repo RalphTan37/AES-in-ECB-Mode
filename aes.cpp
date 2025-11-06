@@ -245,20 +245,17 @@ void pad(vector<uint8_t>& inputText) {
 }
 
 // Checks last byte and trims padding
-bool unpad(std::vector<uint8_t>& data) {
-    if (data.empty() || (data.size() % 16) != 0) return false;
-    uint8_t last = data.back();
+void unpad(vector<uint8_t>& inputText) {
+    if (inputText.size() % 16 != 0) return;
+    uint8_t last = inputText.back();
 
-    if (last == 0 || last > 16) return false;
-    size_t pad_len = last;
+    if (last == 0 || last > 16) return;
 
     // verify padding bytes
-    for (size_t i = 0; i < pad_len; ++i) {
-        if (data[data.size() - 1 - i] != last) return false;
+    for (size_t i = 0; i < last; ++i) {
+        if (inputText[inputText.size() - 1 - i] != last) return;
     }
-
-    data.resize(data.size() - pad_len);
-    return true;
+    inputText.resize(inputText.size() - last);
 }
 
 // Takes plaintext and a 128-bit AES key, encrypts the data in 16-byte blocks using AES
@@ -297,7 +294,7 @@ string decrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
         decryptedText.insert(decryptedText.end(), block, block + 16);
     }
 
-    !unpad(decryptedText);
+    unpad(decryptedText);
 
     string finalText;
     for (uint8_t byte : decryptedText) {
@@ -337,14 +334,11 @@ int main() {
         cout << "Text length must be even." << endl;
         return 1;
     } else {
-        bool test = true;
         for (char c : rawText) {
-            if (!isxdigit(static_cast<unsigned char>(c)))
-                test = false;
-        }
-        if (!test) {
-            cout << "Text must be in hexadecimal format." << endl;
-            return 1;
+            if (!isxdigit(static_cast<unsigned char>(c))) {
+                cout << "Text must be in hexadecimal format." << endl;
+                return 1;
+            }
         }
     }
 
@@ -355,14 +349,11 @@ int main() {
         cout << "Key must be 32 characters." << endl;
         return 1;
     } else {
-        bool test = true;
         for (char c : rawKey) {
-            if (!isxdigit(static_cast<unsigned char>(c)))
-                test = false;
-        }
-        if (!test) {
-            cout << "Key must be in hexadecimal format." << endl;
-            return 1;
+            if (!isxdigit(static_cast<unsigned char>(c))) {
+                cout << "Key must be in hexadecimal format." << endl;
+                return 1;
+            }
         }
     }
 
@@ -372,6 +363,9 @@ int main() {
     for (int i = 0; i < rawText.length() / 2; i++) {
         inputText.push_back(static_cast<uint8_t>(stoi(rawText.substr(2*i, 2), nullptr, 16)));
     }
+
+
+
 
     string finalText;
     if (action == 'e') {
