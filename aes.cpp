@@ -60,7 +60,7 @@ static inline uint8_t xtime(uint8_t x) {
     return (uint8_t)((x << 1) ^ ((x & 0x80) ? 0x1B : 0x00));
 }
 
-// Multiplying and b bit by bit, for every 1 bit in b, add (XOR) a shifted version of a
+// Multiplying a and b bit by bit, for every 1 bit in b, add (XOR) a shifted version of a
 // Each shift is a multiply by 2 in AES's math system (xtime)
 static inline uint8_t mul(uint8_t a, uint8_t b) {
     uint8_t res = 0;
@@ -72,10 +72,10 @@ static inline uint8_t mul(uint8_t a, uint8_t b) {
     return res;
 }
 
-// Takes original 16-byte AES key and streches it into 176 bytes of round keys
-// AES-128 has 11 round keys, each 16 bytes, 11 * 16 = 176
+// Takes original 16-byte AES key and streches it into 176 bytes of round keys (AES-128 has 11 round keys each 16 bytes: 11 * 16 = 176)
+// Done via shift, substitution using sbox, round constants, and XORing with previous bytes
 void KeyExpansion(const uint8_t key[16], uint8_t roundKeys[176]) {
-    memcpy(roundKeys, key, 16); // original key
+    memcpy(roundKeys, key, 16);
     int bytesGenerated = 16;
     int rconIter = 1;
     uint8_t temp[4];
@@ -84,22 +84,18 @@ void KeyExpansion(const uint8_t key[16], uint8_t roundKeys[176]) {
         memcpy(temp, &roundKeys[bytesGenerated - 4], 4);
 
         if (bytesGenerated % 16 == 0) {
-            // rotate the bytes, move the first byte to the end
             uint8_t t = temp[0];
             temp[0] = temp[1];
             temp[1] = temp[2];
             temp[2] = temp[3];
             temp[3] = t;
-            // apply S-box to each byte
             temp[0] = sbox[temp[0]];
             temp[1] = sbox[temp[1]];
             temp[2] = sbox[temp[2]];
             temp[3] = sbox[temp[3]];
-            // mixes with round constant
             temp[0] ^= Rcon[rconIter++];
         }
 
-        // generate 4 new bytes by XORing each byte in temp with the byte 16 positions earlier in the expanded key
         for (int i = 0; i < 4; ++i) {
             roundKeys[bytesGenerated] = roundKeys[bytesGenerated - 16] ^ temp[i];
             bytesGenerated++;
@@ -113,7 +109,7 @@ void SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) state[i] = sbox[state[i]];
 }
 
-// Rotate each row differently (Diffusion)
+// Reverses SubBytes() during decryption
 void InvSubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) state[i] = inv_sbox[state[i]];
 }
@@ -191,11 +187,11 @@ void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
     for (int i = 0; i < 16; ++i) state[i] ^= roundKey[i];
 }
 
-// Encrypts one 16-byte block
+// Encrypts one 16-byte block round by round with appropriate transformations
 void Cipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176]) {
     uint8_t state[16];
     memcpy(state, in, 16);
-    AddRoundKey(state, roundKeys); // first round (0)
+    AddRoundKey(state, roundKeys);
 
     for (int round = 1; round <= 9; ++round) {
         SubBytes(state);
@@ -204,7 +200,6 @@ void Cipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176])
         AddRoundKey(state, roundKeys + 16*round);
     }
     
-    // last round
     SubBytes(state);
     ShiftRows(state);
     AddRoundKey(state, roundKeys + 160);
@@ -212,7 +207,7 @@ void Cipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176])
     memcpy(out, state, 16);
 }
 
-// Decrypts one 16-byte block
+// Decrypts one 16-byte block round by round with appropriate transformations
 void InvCipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[176]) {
     uint8_t state[16];
     memcpy(state, in, 16);
@@ -228,7 +223,7 @@ void InvCipher(const uint8_t in[16], uint8_t out[16], const uint8_t roundKeys[17
         InvSubBytes(state);
     }
 
-    AddRoundKey(state, roundKeys); // first round
+    AddRoundKey(state, roundKeys);
     memcpy(out, state, 16);
 }
 
@@ -242,21 +237,20 @@ void pad(vector<uint8_t>& inputText) {
     }
 }
 
-// Checks last byte and trims padding
+// Checks last byte and trims padding if it exists
 void unpad(vector<uint8_t>& inputText) {
     if (inputText.size() % 16 != 0) return;
     uint8_t last = inputText.back();
 
     if (last == 0 || last > 16) return;
 
-    // verify padding bytes
     for (size_t i = 0; i < last; ++i) {
         if (inputText[inputText.size() - 1 - i] != last) return;
     }
     inputText.resize(inputText.size() - last);
 }
 
-// Takes plaintext and a 128-bit AES key, encrypts the data in 16-byte blocks using AES
+// Takes plaintext and a 128-bit AES key, encrypts the data in 16-byte blocks using AES-ECB with appropriate padding added
 // Returns the result as a hexadecimal string
 string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     pad(inputText);
@@ -270,6 +264,7 @@ string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
         Cipher(&inputText[i], block, roundKeys);
         encryptedText.insert(encryptedText.end(), block, block + 16);
     }
+
     string finalText;
     for (uint8_t byte : encryptedText) {
         char buf[3];
@@ -280,7 +275,8 @@ string encrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     return finalText;
 }
 
-// Takes the ciphertext and decrypts them using the same 128-bit key
+// Takes the ciphertext and decrypts block by block using the same 128-bit key with appropriate padding removal
+// Returns the result as a hexadecimal string
 string decrypt(array<uint8_t, 16> key, vector<uint8_t> inputText) {
     uint8_t roundKeys[176];
     KeyExpansion(key.data(), roundKeys);
@@ -311,10 +307,11 @@ int main() {
     vector<uint8_t> inputText;
     string rawText;
 
-
+    // Retrieve inputs action, text (raw String first), and key (raw String first)
     cout << "Enter 'e' for encryption and 'd' for decryption: " << endl;
     cin >> action;
-
+    
+    /// Error handling for invalid action
     if (action == 'e') {
         cout << "Enter text to be encrypted without spaces or delimiters: " << endl;
     } else if (action == 'd') {
@@ -325,6 +322,7 @@ int main() {
     }
     cin >> rawText;
 
+    // Error handling for invalid text
     if (rawText.length() == 0) {
         cout << "Text cannot be empty." << endl;
         return 1;
@@ -340,10 +338,11 @@ int main() {
         }
     }
 
-
+    
     cout << "Enter key without spaces or delimiters: " << endl;
     cin >> rawKey;
 
+    // Error handdling for invalid key
     if (rawKey.length() != 32) {
         cout << "Key must be 32 characters." << endl;
         return 1;
@@ -357,6 +356,7 @@ int main() {
     }
 
 
+    // Convert raw string inputs into hex byte array/vector
     for (int i = 0; i < 16; i++) {
         key[i] = static_cast<uint8_t>(stoi(rawKey.substr(2*i, 2), nullptr, 16));
     }
@@ -366,7 +366,7 @@ int main() {
 
 
 
-
+    // Encrypt/decrypt
     string finalText;
     if (action == 'e') {
         finalText = encrypt(key, inputText);
@@ -374,6 +374,7 @@ int main() {
         finalText = decrypt(key, inputText);
     }
     
+    // Output result
     cout << "Resulting Text: " << finalText << endl;
 
     return 0;
