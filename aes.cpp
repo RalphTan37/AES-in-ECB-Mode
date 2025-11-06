@@ -54,7 +54,6 @@ static const uint8_t Rcon[11] = {
     0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 };
 
-/***  Helper Functions (Galois Field (2^8)) ***/
 
 // Multiply by 2 in AES math, and if it overflows 8 bits, wrap it around by XORing with 0x1B
 static inline uint8_t xtime(uint8_t x) {
@@ -108,7 +107,6 @@ void KeyExpansion(const uint8_t key[16], uint8_t roundKeys[176]) {
     }
 }
 
-/*** Core AES Round Operations ***/
 
 // Replace bytes using lookup (Confusion)
 void SubBytes(uint8_t state[16]) {
@@ -123,44 +121,44 @@ void InvSubBytes(uint8_t state[16]) {
 // Each row is shifted by a different amount
 void ShiftRows(uint8_t state[16]) {
     uint8_t tmp[16];
-    tmp[0]=state[0]; 
-    tmp[1]=state[5]; 
-    tmp[2]=state[10]; 
-    tmp[3]=state[15];
-    tmp[4]=state[4]; 
-    tmp[5]=state[9]; 
-    tmp[6]=state[14]; 
-    tmp[7]=state[3];
-    tmp[8]=state[8]; 
-    tmp[9]=state[13];
-    tmp[10]=state[2]; 
-    tmp[11]=state[7];
-    tmp[12]=state[12];
-    tmp[13]=state[1];
-    tmp[14]=state[6]; 
-    tmp[15]=state[11];
+    tmp[0] = state[0]; 
+    tmp[1] = state[5]; 
+    tmp[2] = state[10]; 
+    tmp[3] = state[15];
+    tmp[4] = state[4]; 
+    tmp[5] = state[9]; 
+    tmp[6] = state[14]; 
+    tmp[7] = state[3];
+    tmp[8] = state[8]; 
+    tmp[9] = state[13];
+    tmp[10] = state[2]; 
+    tmp[11] = state[7];
+    tmp[12] = state[12];
+    tmp[13] = state[1];
+    tmp[14] = state[6]; 
+    tmp[15] = state[11];
     memcpy(state,tmp,16);
 }
 
 // Reverse - Shifting in the opposite direction to undo it during decryption
 void InvShiftRows(uint8_t state[16]) {
     uint8_t tmp[16];
-    tmp[0]=state[0]; 
-    tmp[1]=state[13]; 
-    tmp[2]=state[10]; 
-    tmp[3]=state[7];
-    tmp[4]=state[4];
-    tmp[5]=state[1]; 
-    tmp[6]=state[14]; 
-    tmp[7]=state[11];
-    tmp[8]=state[8]; 
-    tmp[9]=state[5];  
-    tmp[10]=state[2];
-    tmp[11]=state[15];
-    tmp[12]=state[12];
-    tmp[13]=state[9]; 
-    tmp[14]=state[6]; 
-    tmp[15]=state[3];
+    tmp[0] = state[0]; 
+    tmp[1] = state[13]; 
+    tmp[2] = state[10]; 
+    tmp[3] = state[7];
+    tmp[4] = state[4];
+    tmp[5] = state[1]; 
+    tmp[6] = state[14]; 
+    tmp[7] = state[11];
+    tmp[8] = state[8]; 
+    tmp[9] = state[5];  
+    tmp[10] = state[2];
+    tmp[11] = state[15];
+    tmp[12] = state[12];
+    tmp[13] = state[9]; 
+    tmp[14] = state[6]; 
+    tmp[15] = state[3];
     memcpy(state,tmp,16);
 }
 
@@ -180,11 +178,11 @@ void MixColumns(uint8_t state[16]) {
 void InvMixColumns(uint8_t state[16]) {
     for (int c = 0; c < 4; ++c) {
         int i=4*c;
-        uint8_t a0=state[i+0], a1=state[i+1], a2=state[i+2], a3=state[i+3];
-        state[i+0] = (uint8_t)(mul(0x0e,a0)^mul(0x0b,a1)^mul(0x0d,a2)^mul(0x09,a3));
-        state[i+1] = (uint8_t)(mul(0x09,a0)^mul(0x0e,a1)^mul(0x0b,a2)^mul(0x0d,a3));
-        state[i+2] = (uint8_t)(mul(0x0d,a0)^mul(0x09,a1)^mul(0x0e,a2)^mul(0x0b,a3));
-        state[i+3] = (uint8_t)(mul(0x0b,a0)^mul(0x0d,a1)^mul(0x09,a2)^mul(0x0e,a3));
+        uint8_t a0 = state[i+0], a1 = state[i+1], a2 = state[i+2], a3 = state[i+3];
+        state[i+0] = (uint8_t)(mul(0x0e,a0) ^ mul(0x0b,a1) ^ mul(0x0d,a2) ^ mul(0x09,a3));
+        state[i+1] = (uint8_t)(mul(0x09,a0) ^ mul(0x0e,a1) ^ mul(0x0b,a2) ^ mul(0x0d,a3));
+        state[i+2] = (uint8_t)(mul(0x0d,a0) ^ mul(0x09,a1) ^ mul(0x0e,a2) ^ mul(0x0b,a3));
+        state[i+3] = (uint8_t)(mul(0x0b,a0) ^ mul(0x0d,a1) ^ mul(0x09,a2) ^ mul(0x0e,a3));
     }
 }
 
@@ -313,9 +311,9 @@ int main() {
     vector<uint8_t> inputText;
     string rawText;
 
+
     cout << "Enter 'e' for encryption and 'd' for decryption: " << endl;
     cin >> action;
-
 
     if (action == 'e') {
         cout << "Enter text to be encrypted without spaces or delimiters: " << endl;
@@ -342,6 +340,7 @@ int main() {
         }
     }
 
+
     cout << "Enter key without spaces or delimiters: " << endl;
     cin >> rawKey;
 
@@ -356,6 +355,7 @@ int main() {
             }
         }
     }
+
 
     for (int i = 0; i < 16; i++) {
         key[i] = static_cast<uint8_t>(stoi(rawKey.substr(2*i, 2), nullptr, 16));
